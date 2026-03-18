@@ -2,9 +2,12 @@
 """
 Laboratory Work #3 - Multiplexed Server
 Parallel client handling using select()/poll()
-- Single-threaded concurrent server
-- Non-blocking I/O with multiplexing
-- File transfer without blocking other clients
+
+Requirements:
+- Single-threaded server handling multiple clients
+- Response time t <= ping * 10
+- File transfers don't block other clients
+- Chunk size optimization for interactive response
 """
 
 import socket
@@ -12,15 +15,16 @@ import select
 import sys
 import time
 import os
+import struct
 from datetime import datetime
 from pathlib import Path
 
 # Configuration
 HOST = '0.0.0.0'
 DEFAULT_PORT = 8080
-BUFFER_SIZE = 4096
+BUFFER_SIZE = 1024  # Small chunks for fast response (ping * 10)
 MAX_CLIENTS = 100
-RESPONSE_TIMEOUT = 0.1  # seconds - must be < ping * 10
+RESPONSE_TIMEOUT = 0.05  # 50ms - must be < ping * 10 (for LAN ping ~1ms, target <10ms)
 
 # Directories
 UPLOADS_DIR = 'uploads'
