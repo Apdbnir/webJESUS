@@ -348,23 +348,35 @@ Available Commands:
 def recv_line(sock):
     """Receive a complete line from server."""
     line = b''
-    while True:
-        try:
-            sock.settimeout(5)
+    try:
+        sock.settimeout(3)
+        while True:
             chunk = sock.recv(1)
             if not chunk:
                 break
             line += chunk
-            if line.endswith(b'\r\n') or line.endswith(b'\n'):
+            if chunk == b'\n':
                 break
-        except socket.timeout:
-            break
+    except socket.timeout:
+        pass
+    except (socket.error, OSError):
+        pass
     
     # Check for EOF marker in file transfers
     if b'EOF' in line:
         line = line.replace(b'EOF', b'')
     
     return line.decode('utf-8', errors='replace').strip()
+
+
+def recv_welcome(sock):
+    """Receive welcome message from server."""
+    try:
+        sock.settimeout(2)
+        data = sock.recv(1024)
+        return data.decode('utf-8', errors='replace')
+    except (socket.timeout, socket.error, OSError):
+        return ''
 
 
 def main():
@@ -389,8 +401,8 @@ def main():
         print(f"[CLIENT] Connected to {server_addr}:{server_port}\n")
         
         # Display welcome message
-        welcome = sock.recv(1024)
-        print(welcome.decode('utf-8', errors='replace'))
+        welcome = recv_welcome(sock)
+        print(welcome)
         
         interactive_mode(sock)
         

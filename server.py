@@ -352,8 +352,9 @@ def handle_client(client_sock, client_addr):
     set_socket_keepalive(client_sock)
     
     # Send welcome message
-    client_sock.sendall(b"Welcome to TCP Socket Server\r\n")
-    client_sock.sendall(b"Commands: ECHO, TIME, UPLOAD, DOWNLOAD, CLOSE\r\n\r\n")
+    welcome = b"Welcome to TCP Socket Server\r\n"
+    welcome += b"Commands: ECHO, TIME, UPLOAD, DOWNLOAD, CLOSE\r\n\r\n"
+    client_sock.sendall(welcome)
     
     connected = True
     buffer = b''
