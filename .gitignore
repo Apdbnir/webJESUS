@@ -26,3 +26,8 @@ Thumbs.db
 .env
 venv/
 env/
+
+# Lab temporary files
+1lab/uploads/*
+1lab/downloads/*
+1lab/.checkpoints/*
