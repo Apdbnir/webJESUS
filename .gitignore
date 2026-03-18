@@ -1,9 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
 # Binaries
 *.exe
-*.pyc
-*.pyo
+*.dll
+*.so
+*.dylib
+*.o
+*.a
+*.lib
 *.bin
-__pycache__/
 
 # Checkpoint files (temporary transfer state)
 .checkpoints/
@@ -15,19 +43,39 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # Environment
 .env
-venv/
-env/
+.venv
 
-# Lab temporary files
+# Test files
+uploads/
+downloads/
+*.test
+*.tmp
+
+# Lab specific
 1lab/uploads/*
 1lab/downloads/*
 1lab/.checkpoints/*
+2lab/uploads/*
+2lab/downloads/*
+2lab/.checkpoints/*
+3lab/uploads/*
+3lab/downloads/*
+3lab/.checkpoints/*
+4lab/uploads/*
+4lab/downloads/*
+4lab/.checkpoints/*
+
+# Keep .gitignore in lab folders
+!1lab/uploads/.gitkeep
+!1lab/downloads/.gitkeep
