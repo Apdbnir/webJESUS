@@ -272,24 +272,30 @@ def handle_download(client_sock, args, client_addr):
             cleanup_checkpoint(session_id)
             return True
         print(f"[RESUME] Download {filename} from offset {start_offset}")
-    else:
-        client_sock.sendall(b"READY\r\n")
-        
-        # Wait for offset from client
-        offset_line = b''
-        while b'\n' not in offset_line:
-            chunk = client_sock.recv(1)
-            if not chunk:
-                return False
-            offset_line += chunk
-        
-        try:
-            start_offset = int(offset_line.decode('utf-8').strip())
+    
+    # Send READY and wait for offset
+    client_sock.sendall(b"READY\r\n")
+    
+    # Wait for offset from client
+    offset_line = b''
+    while b'\n' not in offset_line:
+        chunk = client_sock.recv(1)
+        if not chunk:
+            return False
+        offset_line += chunk
+    
+    try:
+        received_offset = int(offset_line.decode('utf-8').strip())
+        if received_offset > 0 and received_offset < total_size:
+            start_offset = received_offset
             if start_offset >= total_size:
                 cleanup_checkpoint(session_id)
                 return True
-        except ValueError:
-            start_offset = 0
+        elif received_offset >= total_size:
+            cleanup_checkpoint(session_id)
+            return True
+    except ValueError:
+        start_offset = 0
     
     print(f"[DOWNLOAD] Sending: {filename} ({total_size} bytes)")
     

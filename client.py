@@ -209,36 +209,20 @@ def download_file(sock, filename):
     # Send DOWNLOAD command
     sock.sendall(f"DOWNLOAD {filename}\r\n".encode('utf-8'))
     
-    # Wait for server response
-    response = b''
-    while b'\n' not in response:
-        chunk = sock.recv(1)
-        if not chunk:
-            print("\n[ERROR] Connection lost")
-            return False
-        response += chunk
+    # Wait for server response (READY or ERROR)
+    response = recv_line(sock)
     
-    response_text = response.decode('utf-8').strip()
-    
-    if response_text.startswith('ERROR'):
-        print(f"[ERROR] {response_text}")
+    if response.startswith('ERROR'):
+        print(f"[ERROR] {response}")
         return False
     
-    if response_text == 'ALREADY COMPLETE':
+    if response == 'ALREADY COMPLETE':
         print("[INFO] File already fully downloaded")
         cleanup_checkpoint(filename)
         return True
     
-    # Send offset for resume
+    # Send offset for resume (or 0 for fresh download)
     sock.sendall(f"{start_offset}\r\n".encode('utf-8'))
-    
-    # Wait for READY
-    response = b''
-    while b'\n' not in response:
-        chunk = sock.recv(1)
-        if not chunk:
-            break
-        response += chunk
     
     # Receive file
     file_path = Path(DOWNLOADS_DIR) / filename
@@ -247,29 +231,28 @@ def download_file(sock, filename):
     bytes_received = start_offset
     start_time = time.time()
     last_progress_time = start_time
+    file_content = b''
     
     try:
         with open(file_path, mode) as f:
             while True:
-                # Check for EOF marker
                 chunk = sock.recv(BUFFER_SIZE)
                 if not chunk:
                     break
                 
+                # Check for EOF marker
                 if b'EOF' in chunk:
-                    # Remove EOF marker and process remaining data
+                    # Process data before EOF
                     data = chunk.replace(b'EOF', b'')
                     if data:
                         f.write(data)
+                        file_content += data
                         bytes_received += len(data)
                     break
                 
                 f.write(chunk)
+                file_content += chunk
                 bytes_received += len(chunk)
-                
-                # Get total size from checkpoint or estimate
-                if total_size == 0:
-                    total_size = bytes_received  # Estimate
                 
                 # Update progress every second
                 current_time = time.time()
@@ -282,6 +265,8 @@ def download_file(sock, filename):
         
         if total_size > 0:
             print_progress_bar(bytes_received, total_size, 'Downloading')
+        else:
+            print(f'\nDownloading: {bytes_received} bytes')
         
         elapsed = time.time() - start_time
         bitrate = (bytes_received * 8) / elapsed if elapsed > 0 else 0
@@ -317,8 +302,8 @@ def interactive_mode(sock):
             
             if cmd.upper() in ['QUIT', 'EXIT', 'CLOSE']:
                 sock.sendall(b"CLOSE\r\n")
-                response = sock.recv(1024)
-                print(f"[SERVER] {response.decode('utf-8').strip()}")
+                response = recv_line(sock)
+                print(f"[SERVER] {response}")
                 break
             
             if cmd.upper() == 'HELP':
@@ -333,27 +318,24 @@ Available Commands:
 """)
                 continue
             
+            # Handle file transfer commands
+            if cmd.upper().startswith('UPLOAD '):
+                filename = cmd[7:].strip()
+                upload_file(sock, filename)
+                continue
+            
+            if cmd.upper().startswith('DOWNLOAD '):
+                filename = cmd[9:].strip()
+                download_file(sock, filename)
+                continue
+            
             # Send command to server
             sock.sendall(f"{cmd}\r\n".encode('utf-8'))
             
             # Receive and display response
-            response = b''
-            while True:
-                sock.settimeout(2)
-                try:
-                    chunk = sock.recv(BUFFER_SIZE)
-                    if not chunk:
-                        break
-                    response += chunk
-                    
-                    # Check for line-based responses
-                    if b'\n' in response and not cmd.upper().startswith('UPLOAD'):
-                        break
-                except socket.timeout:
-                    break
-            
+            response = recv_line(sock)
             if response:
-                print(response.decode('utf-8', errors='replace').strip())
+                print(response)
                 
         except KeyboardInterrupt:
             print("\n[CLIENT] Disconnecting...")
@@ -361,6 +343,28 @@ Available Commands:
         except (socket.error, OSError) as e:
             print(f"\n[ERROR] Connection error: {e}")
             break
+
+
+def recv_line(sock):
+    """Receive a complete line from server."""
+    line = b''
+    while True:
+        try:
+            sock.settimeout(5)
+            chunk = sock.recv(1)
+            if not chunk:
+                break
+            line += chunk
+            if line.endswith(b'\r\n') or line.endswith(b'\n'):
+                break
+        except socket.timeout:
+            break
+    
+    # Check for EOF marker in file transfers
+    if b'EOF' in line:
+        line = line.replace(b'EOF', b'')
+    
+    return line.decode('utf-8', errors='replace').strip()
 
 
 def main():
