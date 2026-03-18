@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """
-Laboratory Work #4 - Parallel Server with Multiprocessing
-Variant: 1 (TCP, Processes spawned on request, no protection)
+Лабораторная работа №4
+Многопроцессный сервер с динамическим пулом
 
-Server architecture:
-- Main process accepts connections
-- Spawns child process for each client
-- Child process handles client until disconnect
-- Dynamic process pool with Nmin/Nmax limits
-- Timeout for idle processes
+Вариант: 1 (TCP, Процессы по запросу)
 
-Requirements:
-- Parallel client handling
-- Process pool with Nmin=2, Nmax=10
-- Dynamic scaling based on load
-- Timeout for excess processes
-- Shared state for statistics
+Архитектура:
+- Главный процесс: accept() соединений
+- Дочерний процесс: обработка клиента
+- Динамический пул: Nmin=2, Nmax=10
+- Таймаут для простаивающих процессов
+
+Требования:
+- Параллельная обработка клиентов
+- Пул процессов с Nmin=2, Nmax=10
+- Динамическое масштабирование
+- Таймаут для лишних процессов
+- Общая статистика
 """
 
 import socket

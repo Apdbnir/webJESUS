@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-TCP Socket Laboratory Work #1
-Client implementation for file transfer
+Лабораторная работа №1
+Клиент для TCP сервера
 
-Features:
-- Interactive command interface
-- UPLOAD/DOWNLOAD file transfer
-- Resume support for interrupted transfers
-- Progress display with speed calculation
-- Out-of-band data reception
+Функционал:
+- Интерактивный режим команд
+- Загрузка/скачивание файлов
+- Прогресс-бар с расчётом скорости
+- Восстановление при обрыве соединения
 """
 
 import socket

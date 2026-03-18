@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
-TCP Socket Laboratory Work #1
-Server implementation with file transfer support
+Лабораторная работа №1
+Сервер с использованием протокола TCP
 
-Features:
-- ECHO, TIME, CLOSE commands
-- UPLOAD/DOWNLOAD file transfer
-- Resume support for interrupted transfers
-- SO_KEEPALIVE for connection monitoring
-- Out-of-band progress data
-- Single-threaded sequential server
+Команды:
+- ECHO <text> - возвращает данные клиенту
+- TIME - возвращает текущее время сервера
+- CLOSE/EXIT/QUIT - закрывает соединение
+- UPLOAD <filename> - загрузка файла на сервер
+- DOWNLOAD <filename> - скачивание файла с сервера
 """
 
 import socket

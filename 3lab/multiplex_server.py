@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Laboratory Work #3 - Multiplexed Server
-Parallel client handling using select()/poll()
+Лабораторная работа №3
+Сервер с мультиплексированием (select)
 
-Requirements:
-- Single-threaded server handling multiple clients
-- Response time t <= ping * 10
-- File transfers don't block other clients
-- Chunk size optimization for interactive response
+Требования:
+- Однопоточный сервер с обработкой нескольких клиентов
+- Время отклика t <= ping × 10
+- Передача файлов не блокирует других клиентов
+- Размер порции оптимизирован для быстрого отклика
 """
 
 import socket

@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """
-Laboratory Work #2 - UDP File Transfer
-Reliable UDP protocol with:
-- Packet acknowledgments (ACK)
-- Retransmission on loss
-- Sliding window for flow control
-- Bitrate calculation and buffer optimization
+Лабораторная работа №2
+Надёжная передача файлов по UDP
+
+Реализованные механизмы:
+- Подтверждение пакетов (ACK)
+- Повторная передача при потере (Retransmission)
+- Скользящее окно (Sliding Window)
+- Контрольная сумма (CRC32)
+- Расчёт битрейта
 """
 
 import socket
