@@ -2,6 +2,7 @@
 *.exe
 *.pyc
 *.pyo
+*.bin
 __pycache__/
 
 # Checkpoint files (temporary transfer state)
