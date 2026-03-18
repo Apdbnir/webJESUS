@@ -37,6 +37,33 @@ webJESUSv1/
 - Внеполосные данные (прогресс передачи)
 - Отображение битрейта
 
+**Порядок тестирования:**
+
+1. **Запуск сервера:**
+   ```bash
+   cd C:\VS_Code\webJESUSv1
+   python 1lab/server.py 8080
+   ```
+
+2. **Запуск клиента (второй терминал):**
+   ```bash
+   cd C:\VS_Code\webJESUSv1
+   python 1lab/client.py 127.0.0.1 8080
+   ```
+
+3. **Тестирование команд:**
+   ```
+   > ECHO Hello World
+   > TIME
+   > CLOSE
+   ```
+
+4. **Передача файла:**
+   ```
+   > UPLOAD 1lab/uploads/test.txt
+   > DOWNLOAD test.txt
+   ```
+
 **Файлы:**
 - `1lab/server.py` - TCP сервер
 - `1lab/client.py` - TCP клиент
@@ -67,6 +94,29 @@ python 1lab/client.py 127.0.0.1 8080
 - IP header: 20 байт
 - UDP header: 8 байт
 - **Данные: 1472 байта**
+
+**Порядок тестирования:**
+
+1. **Создание тестового файла:**
+   ```bash
+   echo Hello UDP > 1lab/uploads/test.txt
+   ```
+
+2. **Запуск сервера (Терминал 1):**
+   ```bash
+   python 2lab/udp_transfer.py server 8080
+   ```
+
+3. **Запуск клиента (Терминал 2):**
+   ```bash
+   python 2lab/udp_transfer.py client 127.0.0.1 8080
+   Enter file path: 1lab/uploads/test.txt
+   ```
+
+4. **Наблюдение за статистикой:**
+   - Количество пакетов
+   - Ретрансмиссии при потере
+   - Битрейт передачи
 
 **Сравнение производительности:**
 | Протокол | Скорость |
@@ -113,15 +163,31 @@ python 2lab/udp_transfer.py client 127.0.0.1 8080
 **Файлы:**
 - `3lab/multiplex_server.py` - Мультиплексированный сервер
 
-```bash
-# Запуск сервера
-python 3lab/multiplex_server.py 8080
+**Порядок тестирования:**
 
-# Подключение нескольких клиентов
-python 1lab/client.py 127.0.0.1 8080  # терминал 1
-python 1lab/client.py 127.0.0.1 8080  # терминал 2
-telnet 127.0.0.1 8080                  # терминал 3
-```
+1. **Запуск сервера:**
+   ```bash
+   python 3lab/multiplex_server.py 8080
+   ```
+
+2. **Подключение 3 клиентов (3 терминала):**
+   ```bash
+   # Терминал 1
+   python 1lab/client.py 127.0.0.1 8080
+   
+   # Терминал 2
+   python 1lab/client.py 127.0.0.1 8080
+   
+   # Терминал 3 (telnet)
+   telnet 127.0.0.1 8080
+   ```
+
+3. **Одновременная работа:**
+   - Клиент 1: `ECHO test`
+   - Клиент 2: `TIME`
+   - Клиент 3: `UPLOAD file.txt`
+   
+   Все команды выполняются параллельно без блокировки!
 
 ---
 
@@ -153,13 +219,42 @@ telnet 127.0.0.1 8080                  # терминал 3
 - `4lab/multiprocess_server.py` - Многопроцессный сервер
 - `1lab/client.py` - Клиент (тот же)
 
-```bash
-# Запуск сервера
-python 4lab/multiprocess_server.py 8080
+**Порядок тестирования:**
 
-# Клиенты (несколько терминалов)
-python 1lab/client.py 127.0.0.1 8080
-```
+1. **Запуск сервера:**
+   ```bash
+   python 4lab/multiprocess_server.py 8080
+   ```
+
+2. **Подключение 5 клиентов (5 терминалов):**
+   ```bash
+   # Терминал 1-5
+   python 1lab/client.py 127.0.0.1 8080
+   ```
+
+3. **Проверка статистики процессов:**
+   ```
+   > STATS
+   
+   === Server Statistics ===
+   Active clients: 5
+   Total connections: 5
+   Bytes transferred: 1024
+   Processes created: 5
+   Process ID: 12345
+   =========================
+   ```
+
+4. **Наблюдение за процессами (второй терминал):**
+   ```bash
+   # Windows
+   tasklist | findstr python
+   
+   # Linux
+   ps aux | grep python
+   ```
+
+   Каждый клиент обрабатывается в отдельном процессе!
 
 ---
 

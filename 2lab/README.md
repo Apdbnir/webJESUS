@@ -45,31 +45,137 @@
 
 ### Запуск
 
-#### Сервер (приём файла):
+#### 1. Запуск сервера (приём файла):
+
+Откройте первый терминал:
 ```bash
-python udp_transfer.py server [port]
+cd C:\VS_Code\webJESUSv1
+python 2lab/udp_transfer.py server 8080
 ```
 
-#### Клиент (отправка файла):
-```bash
-python udp_transfer.py client <host> [port]
+Ожидайте подключения клиента:
 ```
+[UDP SERVER] Listening on 0.0.0.0:8080
+[UDP RECV] Waiting for file...
+[UDP] Window size: 10 packets
+[UDP RECV] Waiting for START packet...
+```
+
+#### 2. Запуск клиента (отправка файла):
+
+Откройте второй терминал:
+```bash
+cd C:\VS_Code\webJESUSv1
+python 2lab/udp_transfer.py client 127.0.0.1 8080
+```
+
+Введите путь к файлу когда попросит:
+```
+Enter file path: 1lab/uploads/test.txt
+```
+
+#### 3. Наблюдайте за процессом:
+
+**Клиент:**
+```
+[UDP SEND] test.txt (23.00 B)
+[UDP] Window size: 10 packets
+[UDP] Buffer size: 1472 bytes
+[UDP] START acknowledged
+
+[STATISTICS]
+  Packets sent: 3
+  Bytes sent: 23.00 B
+  Time: 0.01 seconds
+  Bitrate: 12632.00 bps (12.34 Kbps)
+```
+
+**Сервер:**
+```
+[UDP RECV] test.txt (23.00 B)
+[UDP] Sent ACK for START
+
+[STATISTICS]
+  Bytes received: 23.00 B
+  Time: 4.75 seconds
+[UDP RECV COMPLETE] Saved to: C:\VS_Code\webJESUSv1\downloads\test.txt
+```
+
+#### 4. Проверка результата:
+
+```bash
+# Windows
+type downloads\test.txt
+type 1lab\uploads\test.txt
+
+# Linux/macOS
+cat downloads/test.txt
+cat 1lab/uploads/test.txt
+```
+
+Файлы должны быть идентичны.
 
 ### Тестирование потери пакетов
 
-#### Windows Firewall - DROP пакеты:
+#### 1. Создание тестового файла:
+
+```bash
+# Маленький файл (23 байта)
+echo Hello UDP Test File > 1lab/uploads/test.txt
+
+# Большой файл (1 MB) для демонстрации скользящего окна
+fsutil file createnew 1lab\uploads\large.bin 1048576
+```
+
+#### 2. Передача большого файла:
+
+**Терминал 1 (сервер):**
+```bash
+python 2lab/udp_transfer.py server 8080
+```
+
+**Терминал 2 (клиент):**
+```bash
+python 2lab/udp_transfer.py client 127.0.0.1 8080
+Enter file path: 1lab\uploads\large.bin
+```
+
+**Ожидайте:**
+- Около 714 пакетов (1048576 / 1472)
+- Прогресс в процентах
+- Статистику с битрейтом
+
+#### 3. Тестирование с потерей пакетов (Windows Firewall):
+
+**DROP пакеты (без уведомления):**
 ```powershell
-netsh advfirewall firewall add rule name="Drop UDP" dir=in action=block protocol=UDP localport=8080
+# Создать правило для отбрасывания UDP пакетов
+netsh advfirewall firewall add rule name="Drop UDP 8080" dir=in action=block protocol=UDP localport=8080
+
+# Запустить передачу - будут ретрансмиссии
+
+# Удалить правило после теста
+netsh advfirewall firewall delete rule name="Drop UDP 8080"
 ```
 
-#### Linux iptables - DROP:
-```bash
-iptables -A INPUT -p udp --dport 8080 -j DROP
+**REJECT пакеты (с уведомлением):**
+```powershell
+# Создать правило для отклонения с ICMP ошибкой
+netsh advfirewall firewall add rule name="Reject UDP 8080" dir=in action=block protocol=UDP localport=8080 remoteip=any
 ```
 
-#### Linux iptables - REJECT:
-```bash
-iptables -A INPUT -p udp --dport 8080 -j REJECT
+#### 4. Наблюдение за ретрансмиссиями:
+
+При потере пакетов вы увидите:
+```
+[RETRANSMIT] Packet 5 (retry 1)
+[RETRANSMIT] Packet 12 (retry 2)
+```
+
+В статистике:
+```
+  Retransmissions: 5
+  Packet loss: 2.5%
 ```
 
 ### Вопрос 1: Выбор оптимального размера буфера
