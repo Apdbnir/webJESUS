@@ -1,0 +1,27 @@
+# Binaries
+*.exe
+*.pyc
+*.pyo
+__pycache__/
+
+# Checkpoint files (temporary transfer state)
+.checkpoints/
+*.checkpoint
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+venv/
+env/
