@@ -119,14 +119,35 @@ class UDPTransfer:
         
         self.stats['start_time'] = time.time()
         
+        # Set timeout for socket
+        self.sock.settimeout(5.0)
+        
         # Send START packet with filename
         start_data = f"{file_size}\n{filename}".encode()
         packet = create_packet(PKT_START, 0, file_size, start_data)
-        self.sock.sendto(packet, self.addr)
-        self.stats['packets_sent'] += 1
         
-        # Wait for ACK
-        if not self._wait_for_ack(0, 'START'):
+        # Retry START packet
+        for retry in range(5):
+            self.sock.sendto(packet, self.addr)
+            self.stats['packets_sent'] += 1
+            
+            # Wait for ACK
+            try:
+                ack_packet, _ = self.sock.recvfrom(BUFFER_SIZE)
+                pkt_type, seq_num, total_size, payload, valid = parse_packet(ack_packet)
+                
+                if pkt_type == PKT_ACK and seq_num == 0:
+                    print(f"[UDP] START acknowledged")
+                    break
+                elif pkt_type == PKT_NACK:
+                    print(f"[UDP] NACK received, retrying...")
+                    continue
+            except socket.timeout:
+                print(f"[UDP] Waiting for START ACK (retry {retry + 1}/5)...")
+                continue
+        
+        else:
+            print(f"[ERROR] No ACK for START packet")
             return False
         
         # Read and send file in chunks
@@ -181,14 +202,23 @@ class UDPTransfer:
         
         self.stats['start_time'] = time.time()
         
-        # Wait for START packet
-        packet, addr = self.sock.recvfrom(BUFFER_SIZE)
-        pkt_type, seq_num, total_size, payload, valid = parse_packet(packet)
+        # Set timeout for socket
+        self.sock.settimeout(5.0)
         
+        # Wait for START packet
+        print(f"[UDP RECV] Waiting for START packet...")
+        try:
+            packet, addr = self.sock.recvfrom(BUFFER_SIZE)
+        except socket.timeout:
+            print(f"[ERROR] Timeout waiting for START packet")
+            return False
+        
+        pkt_type, seq_num, total_size, payload, valid = parse_packet(packet)
+
         if pkt_type != PKT_START:
             print(f"[ERROR] Expected START packet, got type {pkt_type}")
             return False
-        
+
         # Parse filename and size
         try:
             parts = payload.decode().split('\n')
@@ -197,45 +227,55 @@ class UDPTransfer:
         except:
             print(f"[ERROR] Invalid START packet")
             return False
-        
+
         print(f"[UDP RECV] {filename} ({format_size(file_size)})")
-        
+
         # Send ACK for START
         ack = create_packet(PKT_ACK, 0, file_size)
         self.sock.sendto(ack, addr)
-        
+        print(f"[UDP] Sent ACK for START")
+
         # Receive file data
         received_data = {}
         expected_seq = 1
         bytes_received = 0
         last_progress = time.time()
         
+        # Set timeout for data packets
+        self.sock.settimeout(10.0)
+
         while bytes_received < file_size:
-            # Receive packet
-            packet, addr = self.sock.recvfrom(BUFFER_SIZE)
-            self.stats['packets_received'] += 1
-            
-            pkt_type, seq_num, pkt_total, payload, valid = parse_packet(packet)
-            
-            if pkt_type == PKT_END:
+            try:
+                # Receive packet
+                packet, addr = self.sock.recvfrom(BUFFER_SIZE)
+            except socket.timeout:
+                print(f"\n[ERROR] Timeout waiting for data packet")
                 break
             
+            self.stats['packets_received'] += 1
+
+            pkt_type, seq_num, pkt_total, payload, valid = parse_packet(packet)
+
+            if pkt_type == PKT_END:
+                print(f"[UDP] Received END packet")
+                break
+
             if pkt_type == PKT_DATA:
                 if not valid:
                     print(f"[WARN] Checksum failed for packet {seq_num}")
                     nack = create_packet(PKT_NACK, seq_num, file_size)
                     self.sock.sendto(nack, addr)
                     continue
-                
+
                 received_data[seq_num] = payload
                 bytes_received += len(payload)
                 self.stats['bytes_received'] += len(payload)
-                
+
                 # Send ACK
                 ack = create_packet(PKT_ACK, seq_num, file_size)
                 self.sock.sendto(ack, addr)
                 self.stats['acks_received'] += 1
-                
+
                 # Progress display
                 now = time.time()
                 if now - last_progress >= 0.5:
@@ -369,7 +409,10 @@ def main():
         
         # Receive file
         transfer = UDPTransfer(sock, None)
-        transfer.receive_file()
+        try:
+            transfer.receive_file()
+        except KeyboardInterrupt:
+            print("\n[UDP SERVER] Interrupted")
         
     elif mode == 'client':
         host = sys.argv[2] if len(sys.argv) > 2 else '127.0.0.1'
@@ -381,7 +424,10 @@ def main():
         filepath = input("Enter file path: ").strip()
         
         transfer = UDPTransfer(sock, addr)
-        transfer.send_file(filepath)
+        try:
+            transfer.send_file(filepath)
+        except KeyboardInterrupt:
+            print("\n[UDP CLIENT] Interrupted")
     
     sock.close()
 
